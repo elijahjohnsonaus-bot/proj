@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Santa’s Workshop</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  body { font-family: Georgia, "Palatino Linotype", Palatino, serif; color: #fbe9b7; }
+  #stage { position: fixed; inset: 0; background: #000; cursor: none; }
+  video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
+  #count { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center; opacity: 0; pointer-events: none;
+    text-shadow: 0 0.04em 0.35em rgba(70, 0, 0, 0.7); }
+  #num { font-size: min(30vh, 18vw); line-height: 1; font-weight: 700; }
+  #num.greet { font-size: min(14vh, 9vw); }
+  #label { font-size: min(7vh, 5vw); margin-top: 2vh; font-style: italic; }
+  #hint { position: absolute; bottom: 3vh; left: 0; right: 0; text-align: center; font-size: 2.4vh;
+    color: #fff; opacity: 0.8; transition: opacity 1s; pointer-events: none; }
+  #pick { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 2vh; background: #000; font-size: 3vh; color: #fff; cursor: auto; }
+  #pick[hidden] { display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <video id="v" src="workshop-loop.mp4" autoplay muted loop playsinline preload="auto"></video>
+  <div id="count"><div id="num"></div><div id="label"></div></div>
+  <div id="hint">Tap for full screen</div>
+  <div id="pick" hidden>
+    <div>Video not found. Choose workshop-loop.mp4 to start.</div>
+    <input type="file" id="file" accept="video/*">
+  </div>
+</div>
+<script>
+  const v = document.getElementById('v'), count = document.getElementById('count'),
+        num = document.getElementById('num'), label = document.getElementById('label'),
+        hint = document.getElementById('hint'), pick = document.getElementById('pick'),
+        file = document.getElementById('file');
+
+  // Seconds into the loop where the golden bokeh scene is fully visible
+  const FROM = 45, TO = 53, FADE = 0.7;
+
+  function sleeps() {
+    const n = new Date(), today = new Date(n.getFullYear(), n.getMonth(), n.getDate()),
+          xmas = new Date(n.getFullYear(), 11, 25);
+    return Math.round((xmas - today) / 864e5);
+  }
+  function setText() {
+    const s = sleeps();
+    if (s > 0) {
+      num.textContent = s; num.className = '';
+      label.textContent = s === 1 ? 'sleep until Christmas' : 'sleeps until Christmas';
+    } else {
+      num.textContent = 'Merry Christmas'; num.className = 'greet'; label.textContent = '';
+    }
+  }
+
+  let shown = false;
+  function tick() {
+    const t = v.currentTime;
+    let o = 0;
+    if (t >= FROM && t <= TO) o = Math.min(1, (t - FROM) / FADE, (TO - t) / FADE);
+    if (o > 0 && !shown) { setText(); shown = true; }
+    if (o === 0) shown = false;
+    count.style.opacity = o;
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  async function start() {
+    try { await v.play(); } catch (e) { hint.textContent = 'Tap to start'; hint.style.opacity = 0.8; }
+  }
+
+  let lock = null;
+  async function keepAwake() {
+    try {
+      if ('wakeLock' in navigator && !lock) {
+        lock = await navigator.wakeLock.request('screen');
+        lock.addEventListener('release', () => { lock = null; });
+      }
+    } catch (e) {}
+  }
+  v.addEventListener('play', keepAwake);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+
+  v.addEventListener('error', () => { pick.hidden = false; });
+  file.addEventListener('change', () => {
+    const f = file.files[0];
+    if (f) { v.src = URL.createObjectURL(f); pick.hidden = true; start(); }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#pick')) return;
+    start();
+    const d = document.documentElement;
+    if (!document.fullscreenElement) { (d.requestFullscreen || d.webkitRequestFullscreen || function () {}).call(d); }
+    else if (document.exitFullscreen) { document.exitFullscreen(); }
+    hint.style.opacity = 0;
+  });
+  setTimeout(() => { hint.style.opacity = 0; }, 6000);
+</script>
+</body>
+</html>
