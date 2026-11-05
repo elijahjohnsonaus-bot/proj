@@ -22,6 +22,9 @@
     background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 3vh; cursor: pointer;
     opacity: 0; transition: opacity 0.5s; }
   body:not(.idle) #snd { opacity: 1; }
+  #badge { position: absolute; top: 3vh; right: 3vw; padding: 0.8vh 2vh; font-size: min(3.2vh, 2.4vw); color: #fbe9b7;
+    background: rgba(0, 0, 0, 0.45); border-radius: 3vh; opacity: 0; pointer-events: none;
+    text-shadow: 0 0.05em 0.3em rgba(0, 0, 0, 0.8); }
   #hint { position: absolute; bottom: 3vh; left: 0; right: 0; text-align: center; font-size: 2.4vh;
     color: #fff; opacity: 0.8; transition: opacity 1s; pointer-events: none; }
   #pick { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
@@ -34,6 +37,7 @@
   <video id="v" src="workshop-loop.mp4" autoplay muted loop playsinline preload="auto"></video>
   <div id="count"><div id="num"></div><div id="label"></div></div>
   <div id="cap"></div>
+  <div id="badge"></div>
   <button id="snd" type="button"></button>
   <audio id="a" src="workshop-music.mp3" loop preload="auto"></audio>
   <div id="hint">Tap for full screen and music</div>
@@ -58,27 +62,42 @@
   }
   function setText() {
     const s = sleeps();
-    if (s > 0) {
+    if (s > 1) {
       num.textContent = s; num.className = '';
-      label.textContent = s === 1 ? 'sleep until Christmas' : 'sleeps until Christmas';
+      label.textContent = 'sleeps until Christmas';
+    } else if (s === 1) {
+      num.textContent = 'Santa’s coming tonight!'; num.className = 'greet'; label.textContent = '1 sleep to go';
     } else {
       num.textContent = 'Merry Christmas'; num.className = 'greet'; label.textContent = '';
     }
   }
+
+  const badge = document.getElementById('badge');
+  function updateBadge() {
+    const s = sleeps();
+    badge.textContent = s > 1 ? s + ' sleeps to go' : s === 1 ? 'Santa’s coming tonight!' : 'Merry Christmas!';
+  }
+  updateBadge(); setInterval(updateBadge, 60000);
 
   // Scene captions: [from, to, text] in seconds into the loop
   const CAPS = [[0.8, 7.7, 'The elves are hard at work'], [9.8, 16.7, 'Testing every toy'],
     [18.8, 25.7, 'Santa is checking his list'], [27.8, 34.7, 'The reindeer are ready'], [36.8, 43.7, 'Off we go!']];
   const cap = document.getElementById('cap');
 
-  let shown = false;
+  let shown = false, lastSync = 0;
   function tick() {
     const t = v.currentTime;
+    if (!a.paused && performance.now() - lastSync > 3000) {
+      lastSync = performance.now();
+      const d = a.currentTime - t;
+      if (Math.abs(d) > 0.35 && Math.abs(d) < 53) { try { a.currentTime = t; } catch (e) {} }
+    }
     let o = 0;
     if (t >= FROM && t <= TO) o = Math.min(1, (t - FROM) / FADE, (TO - t) / FADE);
     if (o > 0 && !shown) { setText(); shown = true; }
     if (o === 0) shown = false;
     count.style.opacity = o;
+    badge.style.opacity = 0.9 * (1 - o);
     let c = 0, txt = cap.textContent;
     for (const [a0, b0, tx] of CAPS) if (t >= a0 && t <= b0) { txt = tx; c = Math.min(1, (t - a0) / 0.6, (b0 - t) / 0.6); }
     if (c > 0) cap.textContent = txt;
@@ -91,7 +110,7 @@
   let musicOn = true;
   try { musicOn = localStorage.getItem('music') !== 'off'; } catch (e) {}
   function paintSnd() { snd.textContent = musicOn ? 'Music: on' : 'Music: off'; }
-  function playMusic() { if (musicOn) { a.volume = 0.6; a.play().catch(() => {}); } else { a.pause(); } }
+  function playMusic() { if (musicOn) { a.volume = 0.6; if (a.paused) { try { a.currentTime = v.currentTime; } catch (e) {} } a.play().catch(() => {}); } else { a.pause(); } }
   snd.addEventListener('click', () => {
     musicOn = !musicOn;
     try { localStorage.setItem('music', musicOn ? 'on' : 'off'); } catch (e) {}
