@@ -7,7 +7,8 @@
 <style>
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
   body { font-family: Georgia, "Palatino Linotype", Palatino, serif; color: #fbe9b7; }
-  #stage { position: fixed; inset: 0; background: #000; cursor: none; }
+  #stage { position: fixed; inset: 0; background: #000; }
+  body.idle { cursor: none; }
   video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
   #count { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
     justify-content: center; text-align: center; opacity: 0; pointer-events: none;
@@ -15,6 +16,12 @@
   #num { font-size: min(30vh, 18vw); line-height: 1; font-weight: 700; }
   #num.greet { font-size: min(14vh, 9vw); }
   #label { font-size: min(7vh, 5vw); margin-top: 2vh; font-style: italic; }
+  #cap { position: absolute; bottom: 7vh; left: 0; right: 0; text-align: center; opacity: 0; pointer-events: none;
+    font-size: min(4.6vh, 3.4vw); font-style: italic; color: #fff3d6; text-shadow: 0 0.06em 0.4em rgba(0, 0, 0, 0.9); }
+  #snd { position: absolute; bottom: 3vh; right: 3vw; font: inherit; font-size: 2.4vh; color: #fff; padding: 0.8vh 1.6vh;
+    background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 3vh; cursor: pointer;
+    opacity: 0; transition: opacity 0.5s; }
+  body:not(.idle) #snd { opacity: 1; }
   #hint { position: absolute; bottom: 3vh; left: 0; right: 0; text-align: center; font-size: 2.4vh;
     color: #fff; opacity: 0.8; transition: opacity 1s; pointer-events: none; }
   #pick { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
@@ -26,7 +33,10 @@
 <div id="stage">
   <video id="v" src="workshop-loop.mp4" autoplay muted loop playsinline preload="auto"></video>
   <div id="count"><div id="num"></div><div id="label"></div></div>
-  <div id="hint">Tap for full screen</div>
+  <div id="cap"></div>
+  <button id="snd" type="button"></button>
+  <audio id="a" src="workshop-music.mp3" loop preload="auto"></audio>
+  <div id="hint">Tap for full screen and music</div>
   <div id="pick" hidden>
     <div>Video not found. Choose workshop-loop.mp4 to start.</div>
     <input type="file" id="file" accept="video/*">
@@ -56,6 +66,11 @@
     }
   }
 
+  // Scene captions: [from, to, text] in seconds into the loop
+  const CAPS = [[0.8, 7.7, 'The elves are hard at work'], [9.8, 16.7, 'Testing every toy'],
+    [18.8, 25.7, 'Santa is checking his list'], [27.8, 34.7, 'The reindeer are ready'], [36.8, 43.7, 'Off we go!']];
+  const cap = document.getElementById('cap');
+
   let shown = false;
   function tick() {
     const t = v.currentTime;
@@ -64,11 +79,35 @@
     if (o > 0 && !shown) { setText(); shown = true; }
     if (o === 0) shown = false;
     count.style.opacity = o;
+    let c = 0, txt = cap.textContent;
+    for (const [a0, b0, tx] of CAPS) if (t >= a0 && t <= b0) { txt = tx; c = Math.min(1, (t - a0) / 0.6, (b0 - t) / 0.6); }
+    if (c > 0) cap.textContent = txt;
+    cap.style.opacity = c;
     requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
 
+  const a = document.getElementById('a'), snd = document.getElementById('snd');
+  let musicOn = true;
+  try { musicOn = localStorage.getItem('music') !== 'off'; } catch (e) {}
+  function paintSnd() { snd.textContent = musicOn ? 'Music: on' : 'Music: off'; }
+  function playMusic() { if (musicOn) { a.volume = 0.6; a.play().catch(() => {}); } else { a.pause(); } }
+  snd.addEventListener('click', () => {
+    musicOn = !musicOn;
+    try { localStorage.setItem('music', musicOn ? 'on' : 'off'); } catch (e) {}
+    paintSnd(); playMusic();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'm' || e.key === 'M') snd.click(); });
+  paintSnd(); playMusic();
+
+  let idleTimer;
+  function wake() { document.body.classList.remove('idle'); clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => document.body.classList.add('idle'), 3000); }
+  ['pointermove', 'pointerdown', 'keydown'].forEach((ev) => document.addEventListener(ev, wake));
+  wake();
+
   async function start() {
+    playMusic();
     try { await v.play(); } catch (e) { hint.textContent = 'Tap to start'; hint.style.opacity = 0.8; }
   }
 
@@ -91,7 +130,7 @@
   });
 
   document.addEventListener('click', (e) => {
-    if (e.target.closest('#pick')) return;
+    if (e.target.closest('#pick, #snd')) return;
     start();
     const d = document.documentElement;
     if (!document.fullscreenElement) { (d.requestFullscreen || d.webkitRequestFullscreen || function () {}).call(d); }
