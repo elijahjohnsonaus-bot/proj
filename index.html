@@ -84,14 +84,9 @@
     [18.8, 25.7, 'Santa is checking his list'], [27.8, 34.7, 'The reindeer are ready'], [36.8, 43.7, 'Off we go!']];
   const cap = document.getElementById('cap');
 
-  let shown = false, lastSync = 0;
+  let shown = false;
   function tick() {
     const t = v.currentTime;
-    if (!a.paused && performance.now() - lastSync > 3000) {
-      lastSync = performance.now();
-      const d = a.currentTime - t;
-      if (Math.abs(d) > 0.35 && Math.abs(d) < 53) { try { a.currentTime = t; } catch (e) {} }
-    }
     let o = 0;
     if (t >= FROM && t <= TO) o = Math.min(1, (t - FROM) / FADE, (TO - t) / FADE);
     if (o > 0 && !shown) { setText(); shown = true; }
@@ -110,7 +105,7 @@
   let musicOn = true;
   try { musicOn = localStorage.getItem('music') !== 'off'; } catch (e) {}
   function paintSnd() { snd.textContent = musicOn ? 'Music: on' : 'Music: off'; }
-  function playMusic() { if (musicOn) { a.volume = 0.6; if (a.paused) { try { a.currentTime = v.currentTime; } catch (e) {} } a.play().catch(() => {}); } else { a.pause(); } }
+  function playMusic() { if (musicOn) { a.volume = 0.6; if (a.paused && a.readyState >= 1 && v.currentTime > 0.5 && v.currentTime < 53) { try { a.currentTime = v.currentTime; } catch (e) {} } a.play().catch(() => {}); } else { a.pause(); } }
   snd.addEventListener('click', () => {
     musicOn = !musicOn;
     try { localStorage.setItem('music', musicOn ? 'on' : 'off'); } catch (e) {}
