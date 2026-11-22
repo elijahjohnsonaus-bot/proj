@@ -13,7 +13,7 @@
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
   body { font-family: Georgia, "Palatino Linotype", Palatino, serif; color: #fbe9b7; }
   #stage { position: fixed; inset: 0; background: #000; }
-  body.idle { cursor: none; }
+  body.idle:not(.aligning) { cursor: none; }
   video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
   #count { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
     justify-content: center; text-align: center; pointer-events: none;
@@ -21,18 +21,38 @@
   #num { font-size: min(30vh, 18vw); line-height: 1; font-weight: 700; font-variant-numeric: lining-nums; letter-spacing: -0.01em; }
   #num.greet { font-size: min(14vh, 9vw); }
   #label { font-size: min(7vh, 5vw); margin-top: 2vh; font-style: italic; letter-spacing: 0.01em; }
-  #snd { position: absolute; bottom: calc(3vh + env(safe-area-inset-bottom)); right: calc(3vw + env(safe-area-inset-right));
-    font: inherit; font-size: max(2.4vh, 15px); color: #fbe9b7; padding: max(0.8vh, 8px) max(1.6vh, 14px);
+  #ctl { position: absolute; bottom: calc(3vh + env(safe-area-inset-bottom)); right: calc(3vw + env(safe-area-inset-right));
+    display: flex; gap: max(1vh, 10px); }
+  .btn { font: inherit; font-size: max(2.4vh, 15px); color: #fbe9b7; padding: max(0.8vh, 8px) max(1.6vh, 14px);
     background: rgba(18, 55, 42, 0.72); border: 1px solid rgba(251, 233, 183, 0.5); border-radius: 999px; cursor: pointer;
-    opacity: 0; transition: opacity 0.5s; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-  #snd:focus-visible { outline: 3px solid #fbe9b7; outline-offset: 3px; opacity: 1; }
-  body:not(.idle) #snd { opacity: 1; }
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  .btn:focus-visible { outline: 3px solid #fbe9b7; outline-offset: 3px; }
+  #ctl .btn { opacity: 0; transition: opacity 0.5s; }
+  #ctl .btn:focus-visible { opacity: 1; }
+  body:not(.idle) #ctl .btn { opacity: 1; }
+  body.aligning #ctl, body.aligning #hint { display: none; }
+
+  /* corner-pin alignment: the video and countdown live in #warp, which is squashed onto the four saved corners */
+  #warp { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform-origin: 0 0; }
+  body.aligning #warp::after { content: ''; position: absolute; inset: 0; pointer-events: none; outline: 3px solid #fff; outline-offset: -3px;
+    background-image: linear-gradient(rgba(255,255,255,0.55) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.55) 1px, transparent 1px);
+    background-size: 10% 10%; }
+  #cal { position: absolute; inset: 0; z-index: 5; }
+  #cal[hidden] { display: none; }
+  .h { position: absolute; width: 48px; height: 48px; margin: -24px 0 0 -24px; box-sizing: border-box; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font: 700 18px Georgia, serif; color: #fff;
+    background: rgba(18, 55, 42, 0.6); border: 3px solid #fbe9b7; cursor: grab; touch-action: none; }
+  .h.sel { background: #d62f2f; border-color: #fff; }
+  #calbar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(520px, 70%); text-align: center;
+    background: rgba(0, 0, 0, 0.78); border: 1px solid rgba(251, 233, 183, 0.5); border-radius: 14px; padding: 14px 16px;
+    font-size: max(2.2vh, 15px); line-height: 1.4; }
+  #calbar .row { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
   #hint { position: absolute; bottom: calc(3vh + env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center;
     font-size: max(2.4vh, 15px); font-style: italic; color: #fbe9b7; opacity: 0.85; transition: opacity 1s; pointer-events: none;
     text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); padding: 0 4vw; }
   /* on a phone held upright the hint would sit on top of the music button, so lift it clear */
   @media (orientation: portrait) { #hint { bottom: calc(3vh + env(safe-area-inset-bottom) + max(6vh, 56px)); } }
-  @media (prefers-reduced-motion: reduce) { #snd, #hint { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { #ctl .btn, #hint { transition: none; } }
   #pick { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
     justify-content: center; gap: 2vh; background: #000; font-size: max(3vh, 17px); color: #fbe9b7; cursor: auto;
     text-align: center; padding: 0 6vw; }
@@ -42,11 +62,26 @@
 </head>
 <body>
 <div id="stage">
-  <video id="v" src="countdown-loop.mp4" autoplay muted loop playsinline preload="auto"></video>
-  <div id="count"><div id="num"></div><div id="label"></div></div>
-  <button id="snd" type="button"></button>
+  <div id="warp">
+    <video id="v" src="countdown-loop.mp4" autoplay muted loop playsinline preload="auto"></video>
+    <div id="count"><div id="num"></div><div id="label"></div></div>
+  </div>
+  <div id="ctl">
+    <button id="align" class="btn" type="button">Align</button>
+    <button id="snd" class="btn" type="button"></button>
+  </div>
   <audio id="a" src="workshop-music.mp3" loop preload="auto"></audio>
   <div id="hint">Tap for full screen and music</div>
+  <div id="cal" hidden>
+    <div id="calbar">
+      Drag the four corners onto the edges of your screen.<br>
+      Keys: 1 to 4 or Space picks a corner, arrows nudge (Shift for bigger), R resets, Enter saves. It saves as you go.
+      <div class="row">
+        <button id="calReset" class="btn" type="button">Reset</button>
+        <button id="calDone" class="btn" type="button">Done</button>
+      </div>
+    </div>
+  </div>
   <div id="pick" hidden>
     <div>Video not found. Choose countdown-loop.mp4 to start.</div>
     <input type="file" id="file" accept="video/*">
@@ -118,8 +153,107 @@
     if (f) { v.src = URL.createObjectURL(f); pick.hidden = true; start(); }
   });
 
+  /* ---- corner pin: line the picture up with the screen once, saved on this device ---- */
+  const stage = document.getElementById('stage'), warp = document.getElementById('warp'),
+        cal = document.getElementById('cal'), alignBtn = document.getElementById('align');
+  const HOME = [[0, 0], [1, 0], [1, 1], [0, 1]];   // top left, top right, bottom right, bottom left, as fractions of the screen
+  let corners = HOME.map((p) => p.slice()), aligning = false, sel = 0;
+  try {
+    const s = JSON.parse(localStorage.getItem('warp'));
+    if (Array.isArray(s) && s.length === 4 && s.every((p) => Array.isArray(p) && p.length === 2 && p.every((n) => typeof n === 'number' && isFinite(n))))
+      corners = s.map((p) => [Math.min(1, Math.max(0, p[0])), Math.min(1, Math.max(0, p[1]))]);
+  } catch (e) {}
+
+  function solve(A, b) {   // plain Gaussian elimination, returns null if the corners are degenerate
+    const n = b.length, M = A.map((r, i) => r.concat(b[i]));
+    for (let c = 0; c < n; c++) {
+      let p = c;
+      for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+      if (Math.abs(M[p][c]) < 1e-9) return null;
+      [M[c], M[p]] = [M[p], M[c]];
+      for (let r = 0; r < n; r++) if (r !== c) {
+        const f = M[r][c] / M[c][c];
+        for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k];
+      }
+    }
+    return M.map((r, i) => r[n] / r[i]);
+  }
+  function applyWarp() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    if (corners.every((p, i) => p[0] === HOME[i][0] && p[1] === HOME[i][1])) { warp.style.transform = ''; return; }
+    const src = [[0, 0], [w, 0], [w, h], [0, h]], A = [], b = [];
+    corners.forEach((c, i) => {
+      const x = src[i][0], y = src[i][1], u = c[0] * w, t = c[1] * h;
+      A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]); b.push(u);
+      A.push([0, 0, 0, x, y, 1, -t * x, -t * y]); b.push(t);
+    });
+    const m = solve(A, b);
+    if (!m) return;
+    warp.style.transform = 'matrix3d(' + [m[0], m[3], 0, m[6], m[1], m[4], 0, m[7], 0, 0, 1, 0, m[2], m[5], 0, 1].join(',') + ')';
+  }
+  const handles = HOME.map((_, i) => {
+    const el = document.createElement('div');
+    el.className = 'h'; el.textContent = i + 1;
+    el.addEventListener('pointerdown', (e) => { select(i); el.setPointerCapture(e.pointerId); e.preventDefault(); });
+    el.addEventListener('pointermove', (e) => {
+      if (!el.hasPointerCapture(e.pointerId)) return;
+      const r = stage.getBoundingClientRect();
+      move(i, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
+    });
+    cal.appendChild(el);
+    return el;
+  });
+  function paintHandles() {
+    handles.forEach((el, i) => {
+      el.style.left = corners[i][0] * 100 + '%'; el.style.top = corners[i][1] * 100 + '%';
+      el.classList.toggle('sel', i === sel);
+    });
+  }
+  function select(i) { sel = i; paintHandles(); }
+  function move(i, x, y) {
+    corners[i] = [Math.min(1, Math.max(0, x)), Math.min(1, Math.max(0, y))];
+    applyWarp(); paintHandles();
+    try { localStorage.setItem('warp', JSON.stringify(corners)); } catch (e) {}
+  }
+  function nudge(dx, dy) {
+    move(sel, corners[sel][0] + dx / stage.clientWidth, corners[sel][1] + dy / stage.clientHeight);
+  }
+  function setAligning(on) {
+    aligning = on;
+    document.body.classList.toggle('aligning', on);
+    cal.hidden = !on;
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    if (on) paintHandles();
+    wake();
+  }
+  alignBtn.addEventListener('click', () => setAligning(true));
+  document.getElementById('calDone').addEventListener('click', () => setAligning(false));
+  document.getElementById('calReset').addEventListener('click', () => {
+    corners = HOME.map((p) => p.slice());
+    applyWarp(); paintHandles();
+    try { localStorage.removeItem('warp'); } catch (e) {}
+  });
+  document.addEventListener('keydown', (e) => {
+    if (!aligning) { if (e.key === 'a' || e.key === 'A') setAligning(true); return; }
+    const big = e.shiftKey ? 10 : 2;
+    if (e.key >= '1' && e.key <= '4') select(+e.key - 1);
+    else if (e.key === ' ' || e.key === 'Tab') select((sel + (e.shiftKey ? 3 : 1)) % 4);
+    else if (e.key === 'ArrowLeft') nudge(-big, 0);
+    else if (e.key === 'ArrowRight') nudge(big, 0);
+    else if (e.key === 'ArrowUp') nudge(0, -big);
+    else if (e.key === 'ArrowDown') nudge(0, big);
+    else if (e.key === 'r' || e.key === 'R') document.getElementById('calReset').click();
+    else if (e.key === 'Enter' || e.key === 'Escape') setAligning(false);
+    else return;
+    e.preventDefault();
+  });
+  window.addEventListener('resize', applyWarp);
+  document.addEventListener('fullscreenchange', applyWarp);
+  applyWarp();
+
   document.addEventListener('click', (e) => {
-    if (e.target.closest('#pick, #snd')) return;
+    if (aligning || e.target.closest('#pick, #ctl, #cal')) return;
     start();
     const d = document.documentElement;
     if (!document.fullscreenElement) { (d.requestFullscreen || d.webkitRequestFullscreen || function () {}).call(d); }
