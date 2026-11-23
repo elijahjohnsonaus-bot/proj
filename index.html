@@ -20,6 +20,7 @@
   #count { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
     justify-content: center; text-align: center; pointer-events: none; color: var(--ink, #fbe9b7);
     text-shadow: 0 0.02em 0.06em var(--edge, transparent), 0 0.04em 0.35em var(--glow, rgba(70, 0, 0, 0.7)); padding: 0 4vw; }
+  #count.high { justify-content: flex-start; padding-top: 3vh; }
   #num { font-size: min(30vh, 18vw); line-height: 1; font-weight: 700; font-variant-numeric: lining-nums; letter-spacing: -0.01em; }
   #num.greet { font-size: min(14vh, 9vw); }
   #label { font-size: min(7vh, 5vw); margin-top: 2vh; font-style: italic; letter-spacing: 0.01em; }
@@ -619,98 +620,23 @@
     const a = sin(ph) * 0.5; g.lineWidth = s * 0.055;
     leg(g, s * 0.2, s * 0.06, s * 0.3, 0.9 + a); leg(g, s * 0.14, s * 0.06, s * 0.3, 0.7 + a * 0.8); leg(g, -s * 0.22, s * 0.06, s * 0.3, -0.9 - a); leg(g, -s * 0.16, s * 0.06, s * 0.3, -0.7 - a * 0.8);
     ell(g, -s * 0.33, -s * 0.06, s * 0.05, s * 0.03, -0.5, col); }
-  /* tonight's trucks: drawn in local units (1 = 1% of the frame height), origin on the ground under the middle, facing right */
-  function wheel(g, x, y, r, rot) {
-    circle(g, x, y, r, '#15161d'); circle(g, x, y, r * 0.62, '#2b2d38');
-    g.strokeStyle = '#a9b0bd'; g.lineWidth = r * 0.16; g.beginPath();
-    for (let i = 0; i < 4; i++) { const an = rot + i * Math.PI / 2; g.moveTo(x, y); g.lineTo(x + cos(an) * r * 0.55, y + sin(an) * r * 0.55); }
-    g.stroke(); circle(g, x, y, r * 0.2, '#d3d8e0'); }
-  function santaHat(g, x, y, s, rot) {   // x, y is the middle of the white brim
-    g.save(); g.translate(x, y); g.rotate(rot || 0);
-    g.fillStyle = '#d62f3a'; g.beginPath(); g.moveTo(-s, 0); g.quadraticCurveTo(-s * 0.7, -s * 1.5, s * 0.9, -s * 1.9); g.quadraticCurveTo(s * 0.7, -s * 0.6, s, 0); g.closePath(); g.fill();
-    ell(g, 0, 0, s * 1.15, s * 0.3, 0, '#ffffff'); circle(g, s * 0.9, -s * 1.9, s * 0.32, '#ffffff'); g.restore(); }
-  function wheelie(g, w, h, body, lid) {   // a wheelie bin, origin at the bottom middle
-    g.fillStyle = body; g.beginPath(); g.moveTo(-w / 2, -h); g.lineTo(w / 2, -h); g.lineTo(w * 0.42, 0); g.lineTo(-w * 0.42, 0); g.closePath(); g.fill();
-    g.fillStyle = mix(body, -0.3); g.fillRect(-w * 0.45, -h * 0.55, w * 0.9, h * 0.06);
-    g.fillStyle = lid; g.fillRect(-w * 0.56, -h * 1.1, w * 1.12, h * 0.15);
-    circle(g, -w * 0.36, -h * 0.03, h * 0.1, '#15161d'); circle(g, w * 0.36, -h * 0.03, h * 0.1, '#15161d'); }
-  function blinkLights(g, t, pts, size) {
-    for (let i = 0; i < pts.length; i++) { g.globalAlpha = 0.5 + 0.5 * sin(t * 3 + i * 1.7); dot(g, bulb(MULTI[i % 5]), pts[i][0], pts[i][1], size); }
-    g.globalAlpha = 1; }
-  function beacon(g, x, y, on) {
-    circle(g, x, y, 0.85, '#7a4a08'); circle(g, x, y - 0.1, 0.65, on ? '#ffd24d' : '#c98a1a');
-    if (on) { g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.8; dot(g, glow('#ffb020', 0.3), x, y, 4); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; } }
-  function headlight(g, x, y, len) {
-    g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.55; dot(g, glow('#fff2b0', 0.2), x, y, 4);
-    g.globalAlpha = 0.13; g.fillStyle = lin(g, x, y, x + len, y, [[0, 'rgba(255,240,170,1)'], [1, 'rgba(255,240,170,0)']]);
-    g.beginPath(); g.moveTo(x, y - 0.5); g.lineTo(x + len, y - 7); g.lineTo(x + len, y + 5); g.lineTo(x, y + 0.5); g.closePath(); g.fill();
-    g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; }
-  function towTruck(g, t, rot) {   // an old rusty tow truck carrying a present on its hook
-    const body = '#8d5a3b', dark = '#5a3824', patch = '#b07a50';
-    g.fillStyle = '#23242c'; g.fillRect(-14, -6, 28, 2);
-    g.fillStyle = body; g.fillRect(-14, -8.4, 17.5, 2.6); g.fillStyle = dark; g.fillRect(-14, -6.4, 17.5, 0.6);
-    g.fillStyle = dark; g.fillRect(-4.8, -12.2, 4.4, 3.9); g.fillStyle = body; g.fillRect(-4.4, -11.8, 3.6, 3.1);
-    g.strokeStyle = dark; g.lineWidth = 1.3; g.lineCap = 'round'; g.beginPath(); g.moveTo(-3, -10.6); g.lineTo(-15.5, -16.5); g.stroke();
-    g.lineWidth = 0.7; g.beginPath(); g.moveTo(0.6, -8.4); g.lineTo(-7, -13.4); g.stroke();
-    const sw = sin(t * 2.2) * 0.6, hx = -15.5 + sw, hy = -9.6;
-    g.strokeStyle = '#2a2a32'; g.lineWidth = 0.28; g.beginPath(); g.moveTo(-15.5, -16.3); g.lineTo(hx, hy); g.stroke();
-    g.lineWidth = 0.45; g.beginPath(); g.arc(hx, hy + 0.9, 0.9, -1.2, 2.6); g.stroke();
-    g.fillStyle = '#d62f3a'; g.fillRect(hx - 1.4, hy + 1.3, 2.8, 2.4); g.fillStyle = '#f5d76e'; g.fillRect(hx - 0.25, hy + 1.3, 0.5, 2.4); g.fillRect(hx - 1.4, hy + 2.3, 2.8, 0.45);
-    g.fillStyle = body; g.beginPath(); g.moveTo(3.5, -6); g.lineTo(3.5, -12.5); g.lineTo(5.5, -14.5); g.lineTo(10, -14.5); g.lineTo(12.4, -10.3); g.lineTo(14.2, -9.6); g.lineTo(14.2, -6); g.closePath(); g.fill();
-    ell(g, 6, -7.8, 1.5, 0.9, 0.2, patch); ell(g, 11.4, -7.4, 1.1, 0.7, -0.3, dark); ell(g, 4.9, -11.2, 0.8, 0.6, 0.5, patch); ell(g, -9, -7.2, 1.7, 0.5, 0, patch); ell(g, -2, -7.1, 1.1, 0.4, 0, dark);
-    g.fillStyle = '#c8e6f2'; g.beginPath(); g.moveTo(5, -13.4); g.lineTo(9.6, -13.4); g.lineTo(11.4, -10.2); g.lineTo(5, -10.2); g.closePath(); g.fill();
-    g.strokeStyle = dark; g.lineWidth = 0.35; g.strokeRect(4.2, -9.6, 5.8, 3.4);
-    circle(g, 13.6, -8.2, 0.95, '#fff7c8'); g.fillStyle = '#c9ccd2'; g.fillRect(13.4, -7, 1.8, 1);
-    wheel(g, -10, -3.5, 3.5, rot); wheel(g, -4.5, -3.5, 3.5, rot); wheel(g, 9.5, -3.5, 3.5, rot);
-    blinkLights(g, t, [0, 1, 2, 3, 4, 5].map((i) => [-3.4 - i * 2.4, -11.4 - i * 1.15]), 1.4);
-    blinkLights(g, t + 2, [[5.9, -14.9], [7.6, -14.9]], 1.2);
-    santaHat(g, 9.4, -14.5, 2.2, 0.1); beacon(g, 4.6, -14.9, sin(t * 7) > 0); headlight(g, 14.6, -8.2, 30); }
-  function binTruck(g, t, rot) {   // a green rubbish truck with a wreath and a bin on the rear lifter
-    const green = '#2e8a4f', deep = '#1f5e37';
-    const pv = [-16.6, -12.5], ang = -0.35 + sin(t * 1.3) * 0.32;
-    g.fillStyle = deep; g.fillRect(-17.2, -12.2, 4, 5.7);
-    g.save(); g.translate(pv[0], pv[1]); g.rotate(ang); g.fillStyle = '#7d8590'; g.fillRect(-5.5, 3.6, 6.2, 0.8); g.translate(-3.2, 7.2); wheelie(g, 4.6, 6.6, '#3b9ad6', '#f2c94c'); g.restore();
-    g.fillStyle = green; g.beginPath(); g.moveTo(-16, -6.5); g.lineTo(-16, -14.5); g.quadraticCurveTo(-16, -17, -13.5, -17); g.lineTo(7, -17); g.quadraticCurveTo(9.6, -17, 9.6, -14.5); g.lineTo(9.6, -6.5); g.closePath(); g.fill();
-    g.fillStyle = '#eaf4ec'; g.fillRect(-16, -11.9, 25.6, 1.2); g.fillStyle = deep; g.fillRect(-16, -7.6, 25.6, 1.1);
-    g.fillStyle = '#38a05d'; g.beginPath(); g.moveTo(9.8, -6.5); g.lineTo(9.8, -14.6); g.lineTo(11.1, -16); g.lineTo(15, -16); g.lineTo(17.6, -11.5); g.lineTo(18.2, -10.2); g.lineTo(18.2, -6.5); g.closePath(); g.fill();
-    g.fillStyle = '#c8e6f2'; g.beginPath(); g.moveTo(11.3, -14.8); g.lineTo(14.6, -14.8); g.lineTo(16.4, -11.4); g.lineTo(11.3, -11.4); g.closePath(); g.fill();
-    circle(g, 17.8, -8.8, 0.95, '#fff7c8'); g.fillStyle = '#c9ccd2'; g.fillRect(17.5, -7.7, 1.8, 1);
-    g.strokeStyle = '#1e7a3a'; g.lineWidth = 1.2; g.beginPath(); g.arc(-3.4, -9.4, 2.5, 0, TAU); g.stroke();
-    for (let i = 0; i < 6; i++) circle(g, -3.4 + cos(i * 1.05) * 2.5, -9.4 + sin(i * 1.05) * 2.5, 0.38, '#d62f3a');
-    g.fillStyle = '#d62f3a'; g.beginPath(); g.moveTo(-3.4, -6.9); g.lineTo(-4.9, -5.8); g.lineTo(-4.5, -7.3); g.closePath(); g.fill(); g.beginPath(); g.moveTo(-3.4, -6.9); g.lineTo(-1.9, -5.8); g.lineTo(-2.3, -7.3); g.closePath(); g.fill();
-    wheel(g, -10.5, -3.6, 3.6, rot); wheel(g, -4.8, -3.6, 3.6, rot); wheel(g, 13.5, -3.6, 3.6, rot);
-    blinkLights(g, t + 1, [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => [-14 + i * 2.6, -17.5 + sin(i * 1.3) * 0.3]), 1.5);
-    santaHat(g, 13.6, -16, 2.3, 0.12); beacon(g, 10.8, -16.4, sin(t * 7 + 3) > 0); headlight(g, 18.4, -8.8, 30); }
   /* one scene per number of sleeps; each returns its colours and drawing steps.
      bg, mid and fg are drawn once and reused; back runs behind mid and draw runs in front of it every frame */
   const SCENES = {
-    32: (R) => {   // tonight only: a rusty tow truck and a rubbish truck doing the Christmas rounds on a snowy street
-      const snow = Snow(R, 130, { v: 0.06 }), stars = Stars(R, 80, 0.45), homes = [];
-      const walls = ['#7a3b2e', '#3d5a80', '#6b4f3a', '#4a6b4f', '#8c6d46', '#5b4b7a', '#9a5b3f'], roofs = ['#3b2230', '#22303f', '#2e2a26', '#26352a', '#40202a'];
-      for (let x = -0.03; x < 1;) { const w = 0.06 + R() * 0.035; homes.push({ x, w, h: 0.5 + R() * 0.25, wall: walls[homes.length % 7], roof: roofs[homes.length % 5], lit: R() < 0.85, cols: R() < 0.5 ? MULTI : WARM }); x += w + 0.015 + R() * 0.02; }
-      let lights = [];
-      const GAP = 52, LEN = 60;   // distance between the two trucks, and how far past the edges they travel, in local units
-      return { ink: '#fff4d6', glow: 'rgba(10,20,60,0.85)', edge: 'rgba(4,10,35,0.9)',
-        bg(g, S) { sky(g, S, [[0, '#050a28'], [0.55, '#16275f'], [1, '#2c4488']]); crescent(g, S.W * 0.86, S.H * 0.14, S.U * 6.5); shade(g, S, 0.3); },
-        back(g, S, t) { stars.step(g, S, t); },
-        mid(g, S) {
-          hill(g, S, 0.74, 0.015, 1.3, 0.8, '#1a2b66'); lights = []; const r = rng(32), gy = S.H * 0.8;
-          for (const h of homes) { const w = h.w * S.W, p = house(g, h.x * S.W, gy, w, w * h.h, h.wall, h.roof);
-            if (h.lit) along(p, S.U * 2.3).forEach((q, i) => lights.push([q[0], q[1], h.cols[i % h.cols.length], r() * TAU])); }
-          g.fillStyle = lin(g, 0, S.H * 0.8, 0, S.H * 0.85, [[0, '#f2f6ff'], [1, '#b6c4e8']]); g.fillRect(0, S.H * 0.8, S.W, S.H * 0.05);
-          g.fillStyle = '#262a38'; g.fillRect(0, S.H * 0.85, S.W, S.H * 0.15);
-          g.fillStyle = '#eef3ff'; g.fillRect(0, S.H * 0.85, S.W, S.U * 0.6);
-          g.fillStyle = 'rgba(232,196,74,0.55)'; for (let x = 0; x < S.W; x += S.U * 16) g.fillRect(x, S.H * 0.915, S.U * 9, S.U * 0.55);
-          const bins = [[0.08, '#2f8f4a', '#f2c94c'], [0.31, '#3b9ad6', '#d62f3a'], [0.58, '#2f8f4a', '#d62f3a'], [0.83, '#d6a02f', '#2f8f4a']];
-          for (const b of bins) { at(g, b[0] * S.W, S.H * 0.84, 0, S.U); wheelie(g, 5, 7.5, b[1], b[2]); santaHat(g, 0, -8.5, 1.9, 0.12); }
-          reset(g); },
+    32: (R) => {   // tonight only: the trucks artwork, with falling snow and pulsing beacons on top
+      const snow = Snow(R, 120, { v: 0.06, size: 0.5 }), IW = 1920, IH = 1080, img = new Image();
+      img.onload = () => { if (sc && sc.tag === 'art32') { try { build(); } catch (e) { console.error(e); } } };
+      img.src = 'scene32.jpg';
+      const fit = (S) => { const k = Math.max(S.W / IW, S.H / IH); return { k, ox: (S.W - IW * k) / 2, oy: (S.H - IH * k) / 2 }; };
+      const beacons = [[476, 592, 0], [1217, 586, 3]], lamps = [[258, 818], [447, 828], [1111, 820], [1262, 830]];   // spots in the picture, in its own pixels
+      return { tag: 'art32', high: true, ink: '#fff4d6', glow: 'rgba(5,10,40,0.9)', edge: 'rgba(0,5,25,0.95)',
+        bg(g, S) { sky(g, S, [[0, '#050a28'], [1, '#16275f']]);
+          if (img.complete && img.naturalWidth) { const f = fit(S); g.drawImage(img, f.ox, f.oy, IW * f.k, IH * f.k); } },
         draw(g, S, t, dt) {
-          for (const l of lights) { const k = 0.5 + 0.5 * sin(t * 2.2 + l[3]); g.globalAlpha = 0.45 + 0.55 * k; dot(g, bulb(l[2]), l[0], l[1], S.U * 1.6 * (0.85 + 0.25 * k)); }
-          g.globalAlpha = 1;
-          const s = S.U * 1.15, v = 9 * S.U, cyc = S.W + (GAP + LEN) * s, p = (t * v + S.W * 0.22) % cyc, gy = S.H * 0.965, tx = -30 * s + p, rot = (t * v) / (3.5 * s);
-          at(g, tx, gy - sin(t * 9) * 0.12 * s, 0, s); towTruck(g, t, rot);
-          at(g, tx - GAP * s, gy - sin(t * 8 + 1) * 0.1 * s, 0, s); binTruck(g, t, rot);
-          g.setTransform(1, 0, 0, 1, 0, 0); snow.step(g, S, t, dt); } };
+          const f = fit(S); g.globalCompositeOperation = 'lighter';
+          for (const b of beacons) { g.globalAlpha = 0.7 * (0.5 + 0.5 * sin(t * 6 + b[2])); dot(g, glow('#ffb020', 0.3), f.ox + b[0] * f.k, f.oy + b[1] * f.k, S.U * 4.5); }
+          lamps.forEach((l, i) => { g.globalAlpha = 0.22 + 0.1 * sin(t * 2 + i); dot(g, glow('#fff2b0', 0.25), f.ox + l[0] * f.k, f.oy + l[1] * f.k, S.U * 5); });
+          g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; snow.step(g, S, t, dt); } };
     },
     31: (R) => {   // presents tumbling down
       const imgs = [['#d62f2f', '#f5d76e'], ['#2f6fd6', '#ffffff'], ['#f2c94c', '#c0392b'], ['#f4f4f4', '#27ae60'], ['#8e44ad', '#f5d76e'], ['#ff8c42', '#1f6fb2'], ['#27ae60', '#d62f2f']].map((c) => present(c[0], c[1]));
@@ -1309,7 +1235,7 @@
   }
   function run() { if (!raf && sc && !document.hidden) { lastT = 0; raf = requestAnimationFrame(frame); } }
   function stopScene() { if (raf) cancelAnimationFrame(raf); raf = 0; }
-  function paintText(th) { count.style.setProperty('--ink', th.ink); count.style.setProperty('--glow', th.glow); count.style.setProperty('--edge', th.edge || 'transparent'); }
+  function paintText(th) { count.classList.toggle('high', !!th.high); count.style.setProperty('--ink', th.ink); count.style.setProperty('--glow', th.glow); count.style.setProperty('--edge', th.edge || 'transparent'); }
   function showVideo() {
     stopScene(); sc = null; layers = null; paintText(VIDEO); cv.hidden = true; v.hidden = false;
     if (!v.getAttribute('src')) v.src = 'countdown-loop.mp4';
