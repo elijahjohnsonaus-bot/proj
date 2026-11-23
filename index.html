@@ -24,7 +24,6 @@
   #num { font-size: min(30vh, 18vw); line-height: 1; font-weight: 700; font-variant-numeric: lining-nums; letter-spacing: -0.01em; }
   #num.greet { font-size: min(14vh, 9vw); }
   #label { font-size: min(7vh, 5vw); margin-top: 2vh; font-style: italic; letter-spacing: 0.01em; }
-  #beau { font-size: min(5vh, 4vw); margin-top: 1.8vh; font-style: italic; letter-spacing: 0.02em; opacity: 0.92; }
   #ctl { position: absolute; bottom: calc(3vh + env(safe-area-inset-bottom)); right: calc(3vw + env(safe-area-inset-right));
     display: flex; gap: max(1vh, 10px); }
   .btn { font: inherit; font-size: max(2.4vh, 15px); color: #fbe9b7; padding: max(0.8vh, 8px) max(1.6vh, 14px);
@@ -69,7 +68,7 @@
   <div id="warp">
     <video id="v" muted loop playsinline preload="auto" hidden></video>
     <canvas id="scene" hidden></canvas>
-    <div id="count"><div id="num"></div><div id="label"></div><div id="beau">Merry Christmas Beau</div></div>
+    <div id="count"><div id="num"></div><div id="label"></div></div>
   </div>
   <div id="ctl">
     <button id="align" class="btn" type="button">Align</button>
